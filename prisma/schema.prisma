@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum NotificationType {
+  WORK_ORDER_CREATED
+  WORK_ORDER_IN_DIAGNOSIS
+  BUDGET_READY
+  WORK_ORDER_APPROVED
+  PAYMENT_COMPLETED
+  PAYMENT_FAILED
+  EXECUTION_COMPLETED
+  EXECUTION_FAILED
+  WORK_ORDER_FINISHED
+  WORK_ORDER_DELIVERED
+  WORK_ORDER_CANCELED
+  REFUND_COMPLETED
+}
+
+enum NotificationChannel {
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model ExecutionLog {
+  id            String          @id @default(uuid())
+  workOrderId   String
+  serviceId     String
+  serviceName   String
+  status        ExecutionStatus @default(PENDING)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime?       @updatedAt
+
+  @@index([workOrderId])
+  @@map("execution_logs")
+}
+
+model NotificationLog {
+  id            String              @id @default(uuid())
+  workOrderId   String
+  customerId    String
+  type          NotificationType
+  channel       NotificationChannel @default(EMAIL)
+  recipient     String
+  subject       String
+  status        NotificationStatus  @default(PENDING)
+  failureReason String?
+  sentAt        DateTime?
+  createdAt     DateTime            @default(now())
+
+  @@index([workOrderId])
+  @@map("notification_logs")
+}
+
+model ServiceMetrics {
+  id                          String   @id @default(uuid())
+  serviceId                   String   @unique
+  serviceName                 String
+  totalExecutions             Int      @default(0)
+  averageExecutionTimeInMinutes Float  @default(0)
+  successRate                 Float    @default(0)
+  updatedAt                   DateTime @updatedAt
+
+  @@map("service_metrics")
+}

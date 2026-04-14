@@ -1,0 +1,114 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: execution-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: execution_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ministack:
+    image: nahuelnucera/ministack:latest
+    container_name: ministack
+    environment:
+      MINISTACK_REGION: us-east-2
+      MINISTACK_ACCOUNT_ID: "000000000000"
+      PERSIST_STATE: "0"
+      LOG_LEVEL: INFO
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./docker-entrypoint-initaws.d:/docker-entrypoint-initaws.d:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: execution-service
+    ports:
+      - "3004:3004"
+    environment:
+      DATABASE_URL: postgresql://postgres:admin@postgres:5434/execution_db?schema=public
+      SERVER_HOST: http://localhost:3004
+      SERVER_PORT: 3004
+      PASSWORD_HASH_SALT: 10
+      JWT_ACCESS_TOKEN_SECRET: 5b328d283d9a9982596057659c71e3a5
+      JWT_REFRESH_TOKEN_SECRET: 8b4e55de6e8b8401cfd56613f356c7cd
+      MAILING_ENABLED: "true"
+      MAILING_HOST: mailhog
+      MAILING_PORT: 1025
+      MAILING_FROM: noreply@autorepair.local
+      NODE_ENV: production
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: execution-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      AWS_ENDPOINT_URL: http://ministack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-2
+      SNS_EXECUTION_EVENTS_TOPIC_ARN: arn:aws:sns:us-east-2:000000000000:execution-events
+      SQS_EXECUTION_WORK_ORDER_QUEUE_URL: http://ministack:4566/000000000000/execution-work-order-queue
+      SQS_NOTIFICATION_QUEUE_URL: http://ministack:4566/000000000000/notification-queue
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ministack:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector/config.yaml"]
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    volumes:
+      - ./monitoring/otel-collector-config.yaml:/etc/otel-collector/config.yaml:ro
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - otel-collector
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    ports:
+      - "3100:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata:
+  prometheus-data:
+  grafana-data:
