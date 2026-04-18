@@ -50,3 +50,22 @@ jobs:
             execution-service=${{ steps.build-image.outputs.image }} \
             -n production
           kubectl rollout status deployment/execution-service -n production --timeout=300s
+
+      - name: Smoke test
+        run: |
+          SERVICE_URL=$(kubectl get svc execution-service -n production -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVICE_URL/health || echo "000")
+            if [ "$STATUS" = "200" ]; then echo "Smoke test passed"; exit 0; fi
+            echo "Attempt $i: got $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "Smoke test failed"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed — rolling back"
+          kubectl rollout undo deployment/execution-service -n production
+          kubectl rollout status deployment/execution-service -n production --timeout=120s

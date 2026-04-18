@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out-tsc",
+    "module": "nodenext",
+    "types": ["jest", "node"],
+    "rootDir": ".",
+    "moduleResolution": "nodenext"
+  },
+  "include": ["e2e/**/*.ts"]
+}

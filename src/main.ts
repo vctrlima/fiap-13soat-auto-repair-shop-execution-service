@@ -1,25 +1,26 @@
 import "./infra/observability/tracing";
 
 import Fastify from "fastify";
+import { randomUUID } from "node:crypto";
+import {
+  ExecutionEventHandler,
+  NotificationEventHandler,
+  SqsEventConsumer,
+} from "./infra/messaging";
+import { DlqMonitor } from "./infra/messaging/dlq-monitor";
+import {
+  correlationFields,
+  getRequestContext,
+  httpRequestCounter,
+  httpRequestDuration,
+} from "./infra/observability";
 import { app } from "./main/config/app";
 import env from "./main/config/env";
 import {
-  httpRequestCounter,
-  httpRequestDuration,
-  getRequestContext,
-  correlationFields,
-} from "./infra/observability";
-import {
-  SqsEventConsumer,
-  ExecutionEventHandler,
-  NotificationEventHandler,
-} from "./infra/messaging";
-import {
-  makeCreateExecutionLogs,
   makeCompleteWorkOrderExecution,
+  makeCreateExecutionLogs,
   makeSendNotification,
 } from "./main/factories/use-cases";
-import { randomUUID } from "node:crypto";
 
 const host = process.env.HOST ?? "localhost";
 const port = Number(env.port);
@@ -81,6 +82,7 @@ const executionConsumer = new SqsEventConsumer(
   env.awsRegion,
   (event) => executionEventHandler.handle(event),
   env.awsEndpoint,
+  [env.snsWorkOrderEventsTopicArn],
 );
 
 const notificationEventHandler = new NotificationEventHandler(
@@ -91,6 +93,16 @@ const notificationConsumer = new SqsEventConsumer(
   env.sqsNotificationQueueUrl,
   env.awsRegion,
   (event) => notificationEventHandler.handle(event),
+  env.awsEndpoint,
+  [env.snsWorkOrderEventsTopicArn],
+);
+
+const dlqMonitor = new DlqMonitor(
+  env.awsRegion,
+  [
+    { name: "execution-work-order-dlq", url: env.sqsExecutionWorkOrderDlqUrl },
+    { name: "notification-dlq", url: env.sqsNotificationDlqUrl },
+  ],
   env.awsEndpoint,
 );
 
@@ -106,11 +118,13 @@ server.listen({ port, host }, (error) => {
     notificationConsumer
       .start()
       .then(() => console.log("[SQS] Notification consumer started"));
+    dlqMonitor.start();
   }
 });
 
 const shutdown = async () => {
   console.log("[SHUTDOWN] Stopping consumers...");
+  dlqMonitor.stop();
   await executionConsumer.stop();
   await notificationConsumer.stop();
   await server.close();

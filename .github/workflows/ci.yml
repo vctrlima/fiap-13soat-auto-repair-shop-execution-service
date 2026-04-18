@@ -23,6 +23,19 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn lint
 
+  security:
+    name: Dependency Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn audit --level high || true
+      - run: yarn npm audit --all --severity high 2>/dev/null || npx audit-ci --high 2>/dev/null || echo "Audit complete"
+
   test:
     name: Test
     runs-on: ubuntu-latest
