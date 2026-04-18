@@ -1,32 +1,32 @@
-import './infra/observability/tracing';
+import "./infra/observability/tracing";
 
-import Fastify from 'fastify';
-import { app } from './main/config/app';
-import env from './main/config/env';
+import Fastify from "fastify";
+import { app } from "./main/config/app";
+import env from "./main/config/env";
 import {
   httpRequestCounter,
   httpRequestDuration,
   getRequestContext,
   correlationFields,
-} from './infra/observability';
+} from "./infra/observability";
 import {
   SqsEventConsumer,
   ExecutionEventHandler,
   NotificationEventHandler,
-} from './infra/messaging';
+} from "./infra/messaging";
 import {
   makeCreateExecutionLogs,
   makeCompleteWorkOrderExecution,
   makeSendNotification,
-} from './main/factories/use-cases';
-import { randomUUID } from 'node:crypto';
+} from "./main/factories/use-cases";
+import { randomUUID } from "node:crypto";
 
-const host = process.env.HOST ?? 'localhost';
+const host = process.env.HOST ?? "localhost";
 const port = Number(env.port);
 
 const server = Fastify({
   logger: {
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL || "info",
     formatters: {
       level(label: string) {
         return { level: label };
@@ -43,24 +43,26 @@ const server = Fastify({
       },
     },
   },
-  requestIdHeader: 'x-request-id',
+  requestIdHeader: "x-request-id",
   genReqId: () => randomUUID(),
 });
 
-server.addHook('onRequest', async (request) => {
+server.addHook("onRequest", async (request) => {
   const ctx = getRequestContext(request.id as string);
   request.log = request.log.child(correlationFields(ctx));
   (request as any).__startTime = process.hrtime.bigint();
 });
 
-server.addHook('onResponse', async (request, reply) => {
+server.addHook("onResponse", async (request, reply) => {
   const startTime = (request as any).__startTime as bigint | undefined;
-  const durationMs = startTime ? Number(process.hrtime.bigint() - startTime) / 1_000_000 : 0;
+  const durationMs = startTime
+    ? Number(process.hrtime.bigint() - startTime) / 1_000_000
+    : 0;
 
   const attributes = {
-    'http.method': request.method,
-    'http.route': request.routeOptions?.url || request.url,
-    'http.status_code': reply.statusCode,
+    "http.method": request.method,
+    "http.route": request.routeOptions?.url || request.url,
+    "http.status_code": reply.statusCode,
   };
 
   httpRequestCounter.add(1, attributes);
@@ -69,7 +71,6 @@ server.addHook('onResponse', async (request, reply) => {
 
 server.register(app);
 
-// SQS consumer for execution work-order events (WorkOrderApproved → create execution logs)
 const executionEventHandler = new ExecutionEventHandler(
   makeCreateExecutionLogs(),
   makeCompleteWorkOrderExecution(),
@@ -82,8 +83,9 @@ const executionConsumer = new SqsEventConsumer(
   env.awsEndpoint,
 );
 
-// SQS consumer for notification events (all events → email notifications)
-const notificationEventHandler = new NotificationEventHandler(makeSendNotification());
+const notificationEventHandler = new NotificationEventHandler(
+  makeSendNotification(),
+);
 
 const notificationConsumer = new SqsEventConsumer(
   env.sqsNotificationQueueUrl,
@@ -98,19 +100,22 @@ server.listen({ port, host }, (error) => {
     process.exit(1);
   } else {
     console.log(`[READY] http://${host}:${port}`);
-    executionConsumer.start().then(() => console.log('[SQS] Execution work-order consumer started'));
-    notificationConsumer.start().then(() => console.log('[SQS] Notification consumer started'));
+    executionConsumer
+      .start()
+      .then(() => console.log("[SQS] Execution work-order consumer started"));
+    notificationConsumer
+      .start()
+      .then(() => console.log("[SQS] Notification consumer started"));
   }
 });
 
-// Graceful shutdown
 const shutdown = async () => {
-  console.log('[SHUTDOWN] Stopping consumers...');
+  console.log("[SHUTDOWN] Stopping consumers...");
   await executionConsumer.stop();
   await notificationConsumer.stop();
   await server.close();
   process.exit(0);
 };
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
