@@ -1,5 +1,5 @@
-import { NotificationLog as DomainNotificationLog } from '@/domain/entities';
-import { NotificationLog as PrismaNotificationLog } from '@prisma/client';
+import { NotificationLog as DomainNotificationLog } from "@/domain/entities";
+import { NotificationLog as PrismaNotificationLog } from "@/generated/prisma/client";
 
 export class NotificationLogMapper {
   static toDomain(prismaLog: PrismaNotificationLog): DomainNotificationLog {

@@ -1,5 +1,5 @@
-import { ExecutionLog as DomainExecutionLog } from '@/domain/entities';
-import { ExecutionLog as PrismaExecutionLog } from '@prisma/client';
+import { ExecutionLog as DomainExecutionLog } from "@/domain/entities";
+import { ExecutionLog as PrismaExecutionLog } from "@/generated/prisma/client";
 
 export class ExecutionLogMapper {
   static toDomain(prismaLog: PrismaExecutionLog): DomainExecutionLog {

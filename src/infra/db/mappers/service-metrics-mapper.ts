@@ -1,5 +1,5 @@
-import { ServiceMetrics as DomainServiceMetrics } from '@/domain/entities';
-import { ServiceMetrics as PrismaServiceMetrics } from '@prisma/client';
+import { ServiceMetrics as DomainServiceMetrics } from "@/domain/entities";
+import { ServiceMetrics as PrismaServiceMetrics } from "@/generated/prisma/client";
 
 export class ServiceMetricsMapper {
   static toDomain(prismaMetrics: PrismaServiceMetrics): DomainServiceMetrics {
@@ -8,7 +8,8 @@ export class ServiceMetricsMapper {
       serviceId: prismaMetrics.serviceId,
       serviceName: prismaMetrics.serviceName,
       totalExecutions: prismaMetrics.totalExecutions,
-      averageExecutionTimeInMinutes: prismaMetrics.averageExecutionTimeInMinutes,
+      averageExecutionTimeInMinutes:
+        prismaMetrics.averageExecutionTimeInMinutes,
       successRate: prismaMetrics.successRate,
       updatedAt: prismaMetrics.updatedAt,
     };

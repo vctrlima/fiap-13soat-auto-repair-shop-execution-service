@@ -3,8 +3,8 @@ import {
   CompleteWorkOrderExecution,
   CreateExecutionLogs,
 } from "@/domain/use-cases";
+import { PrismaClient } from "@/generated/prisma/client";
 import { logger } from "@/infra/observability";
-import { PrismaClient } from "@prisma/client";
 
 export class ExecutionEventHandler {
   constructor(
