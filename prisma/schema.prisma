@@ -74,13 +74,32 @@ model NotificationLog {
 }
 
 model ServiceMetrics {
-  id                          String   @id @default(uuid())
-  serviceId                   String   @unique
-  serviceName                 String
-  totalExecutions             Int      @default(0)
-  averageExecutionTimeInMinutes Float  @default(0)
-  successRate                 Float    @default(0)
-  updatedAt                   DateTime @updatedAt
+  id                            String   @id @default(uuid())
+  serviceId                     String   @unique
+  serviceName                   String
+  totalExecutions               Int      @default(0)
+  averageExecutionTimeInMinutes Float    @default(0)
+  successRate                   Float    @default(0)
+  updatedAt                     DateTime @updatedAt
 
   @@map("service_metrics")
+}
+
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  eventType   String    @db.VarChar(100)
+  payload     Json
+  published   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+
+  @@index([published, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  messageId   String   @id @db.VarChar(255)
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_events")
 }

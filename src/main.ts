@@ -8,6 +8,9 @@ import {
   SqsEventConsumer,
 } from "./infra/messaging";
 import { DlqMonitor } from "./infra/messaging/dlq-monitor";
+import { OutboxProcessor } from "./infra/messaging/outbox-processor";
+import { SnsEventPublisher } from "./infra/messaging/sns-event-publisher";
+import { prisma } from "./infra/db/prisma-client";
 import {
   correlationFields,
   getRequestContext,
@@ -75,6 +78,7 @@ server.register(app);
 const executionEventHandler = new ExecutionEventHandler(
   makeCreateExecutionLogs(),
   makeCompleteWorkOrderExecution(),
+  prisma,
 );
 
 const executionConsumer = new SqsEventConsumer(
@@ -106,6 +110,11 @@ const dlqMonitor = new DlqMonitor(
   env.awsEndpoint,
 );
 
+const outboxProcessor = new OutboxProcessor(
+  prisma,
+  new SnsEventPublisher(env.snsExecutionEventsTopicArn, env.awsRegion, env.awsEndpoint),
+);
+
 server.listen({ port, host }, (error) => {
   if (error) {
     server.log.error(error);
@@ -119,12 +128,14 @@ server.listen({ port, host }, (error) => {
       .start()
       .then(() => console.log("[SQS] Notification consumer started"));
     dlqMonitor.start();
+    outboxProcessor.start();
   }
 });
 
 const shutdown = async () => {
   console.log("[SHUTDOWN] Stopping consumers...");
   dlqMonitor.stop();
+  outboxProcessor.stop();
   await executionConsumer.stop();
   await notificationConsumer.stop();
   await server.close();

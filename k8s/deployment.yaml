@@ -18,6 +18,20 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
+      initContainers:
+        - name: migrate
+          image: auto-repair-shop/execution-service:latest
+          command: ["npx", "prisma", "migrate", "deploy"]
+          envFrom:
+            - configMapRef:
+                name: execution-service-config
+            - secretRef:
+                name: execution-service-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       containers:
         - name: execution-service
           image: auto-repair-shop/execution-service:latest

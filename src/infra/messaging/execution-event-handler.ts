@@ -1,33 +1,72 @@
-import { DomainEvent, WorkOrderEventData } from '@/domain/events';
-import { CreateExecutionLogs, CompleteWorkOrderExecution } from '@/domain/use-cases';
+import { DomainEvent, WorkOrderEventData } from "@/domain/events";
+import {
+  CompleteWorkOrderExecution,
+  CreateExecutionLogs,
+} from "@/domain/use-cases";
+import { logger } from "@/infra/observability";
+import { PrismaClient } from "@prisma/client";
 
 export class ExecutionEventHandler {
   constructor(
     private readonly createExecutionLogs: CreateExecutionLogs,
     private readonly completeExecution: CompleteWorkOrderExecution,
+    private readonly prisma?: PrismaClient,
   ) {}
 
   async handle(event: DomainEvent): Promise<void> {
+    if (this.prisma) {
+      const existing = await this.prisma.processedEvent.findUnique({
+        where: { messageId: event.eventId },
+      });
+      if (existing) {
+        logger.info(
+          { eventId: event.eventId, eventType: event.eventType },
+          "Duplicate event, skipping",
+        );
+        return;
+      }
+    }
+
     switch (event.eventType) {
-      case 'WorkOrderApproved':
-        await this.handleWorkOrderApproved(event as DomainEvent<WorkOrderEventData>);
+      case "WorkOrderApproved":
+        await this.handleWorkOrderApproved(
+          event as DomainEvent<WorkOrderEventData>,
+        );
         break;
-      case 'WorkOrderCanceled':
-        console.log(`[ExecutionEventHandler] WorkOrderCanceled for WO ${event.data.workOrderId} — no execution to cancel`);
+      case "WorkOrderCanceled":
+        logger.info(
+          { workOrderId: event.data.workOrderId },
+          "WorkOrderCanceled — no execution to cancel",
+        );
         break;
       default:
-        console.log(`[ExecutionEventHandler] Ignoring event type: ${event.eventType}`);
+        logger.info(
+          { eventType: event.eventType },
+          "Ignoring unhandled event type",
+        );
+        return;
+    }
+
+    if (this.prisma) {
+      await this.prisma.processedEvent.create({
+        data: { messageId: event.eventId },
+      });
     }
   }
 
-  private async handleWorkOrderApproved(event: DomainEvent<WorkOrderEventData>): Promise<void> {
+  private async handleWorkOrderApproved(
+    event: DomainEvent<WorkOrderEventData>,
+  ): Promise<void> {
     const { workOrderId, services } = event.data;
     if (!services || services.length === 0) {
-      console.log(`[ExecutionEventHandler] No services to execute for WO ${workOrderId}`);
+      logger.info({ workOrderId }, "No services to execute");
       return;
     }
 
-    console.log(`[ExecutionEventHandler] Creating execution logs for WO ${workOrderId} with ${services.length} services`);
+    logger.info(
+      { workOrderId, serviceCount: services.length },
+      "Creating execution logs",
+    );
     await this.createExecutionLogs.create({
       workOrderId,
       services: services.map((s) => ({ id: s.id, name: s.name })),

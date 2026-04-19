@@ -1,6 +1,7 @@
 import { DomainEvent, WorkOrderEventData, PaymentEventData, ExecutionEventData } from '@/domain/events';
 import { NotificationType } from '@/domain/entities';
 import { SendNotification } from '@/domain/use-cases';
+import { logger } from '@/infra/observability';
 
 const EVENT_TO_NOTIFICATION: Partial<Record<string, { type: NotificationType; subject: string; bodyFn: (data: any) => string }>> = {
   WorkOrderApproved: {
@@ -46,17 +47,17 @@ export class NotificationEventHandler {
   async handle(event: DomainEvent): Promise<void> {
     const config = EVENT_TO_NOTIFICATION[event.eventType];
     if (!config) {
-      console.log(`[NotificationEventHandler] No notification configured for: ${event.eventType}`);
+      logger.info({ eventType: event.eventType }, 'No notification configured for event');
       return;
     }
 
     const recipient = event.data.customerEmail;
     if (!recipient) {
-      console.log(`[NotificationEventHandler] No customerEmail in event ${event.eventType} for WO ${event.data.workOrderId}, skipping`);
+      logger.info({ eventType: event.eventType, workOrderId: event.data.workOrderId }, 'No customerEmail in event, skipping notification');
       return;
     }
 
-    console.log(`[NotificationEventHandler] Sending ${config.type} email to ${recipient} for WO ${event.data.workOrderId}`);
+    logger.info({ type: config.type, recipient, workOrderId: event.data.workOrderId }, 'Sending notification');
 
     await this.sendNotification.send({
       workOrderId: event.data.workOrderId,

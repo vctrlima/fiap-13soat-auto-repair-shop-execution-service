@@ -30,7 +30,9 @@ const envSchema = z.object({
     .default("http://localhost:4566/000000000000/notification-queue-dlq"),
   MAILING_ENABLED: z.string().default("false"),
   CORS_ORIGIN: z.string().optional(),
-  JWT_ACCESS_TOKEN_SECRET: z.string().optional(),
+  JWT_ACCESS_TOKEN_SECRET: z.string({
+    error: "JWT_ACCESS_TOKEN_SECRET is required. Auth cannot be disabled.",
+  }),
 });
 
 const parsed = envSchema.parse(process.env);
