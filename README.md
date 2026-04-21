@@ -12,6 +12,7 @@
 - [6. Execução e Setup](#6-execução-e-setup)
 - [7. Pontos de Atenção](#7-pontos-de-atenção)
 - [8. Boas Práticas e Padrões](#8-boas-práticas-e-padrões)
+- [9. Repositórios Relacionados](#9-repositórios-relacionados)
 
 ---
 
@@ -361,3 +362,18 @@ O Circuit Breaker protege SNS e SMTP. Em modo `OPEN`, publicações e e-mails s�
 - **Injeção de dependências**: manual via composition root em `src/main/`
 - **Testes**: estrutura espelho (`*.spec.ts` ao lado do arquivo de produção)
 - **Cobertura mínima**: 80% em branches, functions, lines e statements
+
+---
+
+## 9. Repositórios Relacionados
+
+Este repositório faz parte do ecossistema **Auto Repair Shop**. Abaixo estão os demais repositórios da arquitetura final:
+
+| Repositório                                                                                                                                | Descrição                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| [fiap-13soat-auto-repair-shop-billing-service](https://github.com/vctrlima/fiap-13soat-auto-repair-shop-billing-service)                   | Geração de faturas e processamento de pagamentos |
+| [fiap-13soat-auto-repair-shop-work-order-service](https://github.com/vctrlima/fiap-13soat-auto-repair-shop-work-order-service)             | Ordens de serviço e Saga Orchestrator            |
+| [fiap-13soat-auto-repair-shop-customer-vehicle-service](https://github.com/vctrlima/fiap-13soat-auto-repair-shop-customer-vehicle-service) | Cadastro de clientes e veículos                  |
+| [fiap-13soat-auto-repair-shop-lambda](https://github.com/vctrlima/fiap-13soat-auto-repair-shop-lambda)                                     | Autenticação de clientes por CPF (AWS Lambda)    |
+| [fiap-13soat-auto-repair-shop-k8s](https://github.com/vctrlima/fiap-13soat-auto-repair-shop-k8s)                                           | Infraestrutura AWS — VPC, EKS, ALB, API Gateway  |
+| [fiap-13soat-auto-repair-shop-db](https://github.com/vctrlima/fiap-13soat-auto-repair-shop-db)                                             | Banco de dados RDS PostgreSQL e migrações Flyway |
