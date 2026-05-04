@@ -5,6 +5,7 @@ export interface ExecutionLog {
   workOrderId: string;
   serviceId: string;
   serviceName: string;
+  customerEmail?: string | null;
   status: ExecutionStatus;
   startedAt?: Date | null;
   completedAt?: Date | null;

@@ -8,6 +8,7 @@ export namespace CreateExecutionLogs {
   export type Params = {
     workOrderId: string;
     services: Array<{ id: string; name: string }>;
+    customerEmail?: string;
   };
   export type Result = ExecutionLog[];
 }
@@ -40,5 +41,5 @@ export interface CompleteWorkOrderExecution {
 
 export namespace CompleteWorkOrderExecution {
   export type Params = { workOrderId: string };
-  export type Result = { workOrderId: string; allCompleted: boolean; completedServices: string[] };
+  export type Result = { workOrderId: string; allCompleted: boolean; hasFailed: boolean; completedServices: string[]; failedServices: string[]; customerEmail?: string };
 }

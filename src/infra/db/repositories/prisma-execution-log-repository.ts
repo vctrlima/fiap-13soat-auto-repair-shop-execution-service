@@ -21,10 +21,11 @@ export class PrismaExecutionLogRepository
       workOrderId: params.workOrderId,
       serviceId: s.id,
       serviceName: s.name,
+      customerEmail: params.customerEmail,
       status: "PENDING" as const,
     }));
 
-    await prisma.executionLog.createMany({ data });
+    await prisma.executionLog.createMany({ data: data as any });
 
     const logs = await prisma.executionLog.findMany({
       where: { workOrderId: params.workOrderId },
@@ -73,14 +74,22 @@ export class PrismaExecutionLogRepository
     });
 
     const allCompleted = logs.every((l) => l.status === "COMPLETED");
+    const hasFailed = logs.some((l) => l.status === "FAILED");
     const completedServices = logs
       .filter((l) => l.status === "COMPLETED")
       .map((l) => l.serviceName);
+    const failedServices = logs
+      .filter((l) => l.status === "FAILED")
+      .map((l) => l.serviceName);
 
+    const customerEmail = (logs[0] as any)?.customerEmail as string | undefined;
     return {
       workOrderId: params.workOrderId,
       allCompleted,
+      hasFailed,
       completedServices,
+      failedServices,
+      customerEmail,
     };
   }
 

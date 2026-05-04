@@ -8,6 +8,7 @@ export class ExecutionLogMapper {
       workOrderId: prismaLog.workOrderId,
       serviceId: prismaLog.serviceId,
       serviceName: prismaLog.serviceName,
+      customerEmail: (prismaLog as any).customerEmail ?? null,
       status: prismaLog.status,
       startedAt: prismaLog.startedAt,
       completedAt: prismaLog.completedAt,

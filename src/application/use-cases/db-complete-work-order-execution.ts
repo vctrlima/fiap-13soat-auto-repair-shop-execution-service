@@ -24,6 +24,23 @@ export class DbCompleteWorkOrderExecution implements CompleteWorkOrderExecution 
           workOrderId: result.workOrderId,
           status: 'COMPLETED',
           completedServices: result.completedServices,
+          customerEmail: result.customerEmail,
+        },
+      };
+      await this.eventPublisher.publish(event);
+    } else if (result.hasFailed) {
+      const event: DomainEvent<ExecutionEventData> = {
+        eventType: 'ExecutionFailed',
+        eventId: randomUUID(),
+        timestamp: new Date().toISOString(),
+        version: '1.0',
+        source: 'execution-service',
+        data: {
+          workOrderId: result.workOrderId,
+          status: 'FAILED',
+          completedServices: result.completedServices,
+          failureReason: `Services failed: ${result.failedServices.join(', ')}`,
+          customerEmail: result.customerEmail,
         },
       };
       await this.eventPublisher.publish(event);

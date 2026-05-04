@@ -57,7 +57,7 @@ export class ExecutionEventHandler {
   private async handleWorkOrderApproved(
     event: DomainEvent<WorkOrderEventData>,
   ): Promise<void> {
-    const { workOrderId, services } = event.data;
+    const { workOrderId, services, customerEmail } = event.data;
     if (!services || services.length === 0) {
       logger.info({ workOrderId }, "No services to execute");
       return;
@@ -70,6 +70,7 @@ export class ExecutionEventHandler {
     await this.createExecutionLogs.create({
       workOrderId,
       services: services.map((s) => ({ id: s.id, name: s.name })),
+      customerEmail,
     });
   }
 }

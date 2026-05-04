@@ -20,6 +20,9 @@ const envSchema = z.object({
   SNS_WORK_ORDER_EVENTS_TOPIC_ARN: z
     .string()
     .default("arn:aws:sns:us-east-2:000000000000:work-order-events"),
+  SNS_PAYMENT_EVENTS_TOPIC_ARN: z
+    .string()
+    .default("arn:aws:sns:us-east-2:000000000000:payment-events"),
   SQS_EXECUTION_WORK_ORDER_DLQ_URL: z
     .string()
     .default(
@@ -46,6 +49,7 @@ export default {
   sqsExecutionWorkOrderQueueUrl: parsed.SQS_EXECUTION_WORK_ORDER_QUEUE_URL,
   sqsNotificationQueueUrl: parsed.SQS_NOTIFICATION_QUEUE_URL,
   snsWorkOrderEventsTopicArn: parsed.SNS_WORK_ORDER_EVENTS_TOPIC_ARN,
+  snsPaymentEventsTopicArn: parsed.SNS_PAYMENT_EVENTS_TOPIC_ARN,
   sqsExecutionWorkOrderDlqUrl: parsed.SQS_EXECUTION_WORK_ORDER_DLQ_URL,
   sqsNotificationDlqUrl: parsed.SQS_NOTIFICATION_DLQ_URL,
   mailingEnabled: parsed.MAILING_ENABLED === "true",

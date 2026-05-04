@@ -98,7 +98,7 @@ const notificationConsumer = new SqsEventConsumer(
   env.awsRegion,
   (event) => notificationEventHandler.handle(event),
   env.awsEndpoint,
-  [env.snsWorkOrderEventsTopicArn],
+  [env.snsWorkOrderEventsTopicArn, env.snsPaymentEventsTopicArn, env.snsExecutionEventsTopicArn],
 );
 
 const dlqMonitor = new DlqMonitor(

@@ -45,6 +45,7 @@ model ExecutionLog {
   workOrderId   String
   serviceId     String
   serviceName   String
+  customerEmail String?
   status        ExecutionStatus @default(PENDING)
   startedAt     DateTime?
   completedAt   DateTime?
